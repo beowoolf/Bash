@@ -1,0 +1,56 @@
+#!/bin/bash
+
+if [ "$(id -u)" != "0" ]; then
+   echo "This script must be run as root" 1>&2
+   exit 1
+fi
+
+PLUS='+'
+MINUS='-'
+
+while getopts "u:a:" option; do
+	case $option in
+		u)
+			echo "-u $OPTARG" >&2
+			USR=${OPTARG}
+			;;
+		a)
+			echo "-a $OPTARG" >&2
+			ACTION=${OPTARG}
+			;;
+	esac
+done
+
+if [ -z ${USR} ]; then
+	echo "User argument (-u) not set"
+else
+	if [ -z ${ACTION} ]; then
+		echo "Action argument (-a) should be \"+\" or \"-\" char"
+	else
+		if [ ${ACTION} == ${PLUS} ]; then
+			echo "Tworzenie pliku ${USR}.raspberrypi3.fritz.box.conf subdomeny ${USR}.raspberrypi3.fritz.box"
+			echo "<VirtualHost *:80>
+	ServerAdmin $USR@raspberrypi3.fritz.box
+	ServerName $USR.raspberrypi3.fritz.box
+	ServerAlias www.$USR.raspberrypi3.fritz.box
+	DocumentRoot /home/$USR/Web
+	ErrorLog \${APACHE_LOG_DIR}/error.log
+	CustomLog \${APACHE_LOG_DIR}/access.log combined
+</VirtualHost>" > /etc/apache2/sites-available/$USR.raspberrypi3.fritz.box.conf
+
+			echo "Aktywacja subdomeny ${USR}.raspberrypi3.fritz.box z pliku ${USR}.raspberrypi3.fritz.box.conf"
+			a2ensite $USR.raspberrypi3.fritz.box.conf
+		else
+			echo "Dezaktywacja subdomeny ${USR}.raspberrypi3.fritz.box z pliku ${USR}.raspberrypi3.fritz.box.conf"
+			a2dissite $USR.raspberrypi3.fritz.box.conf
+		fi
+		
+		echo "Przeładowanie konfiguracji serwera WWW, aby aktywować subdomenę ${USR}.raspberrypi3.fritz.box z pliku ${USR}.raspberrypi3.fritz.box.conf"
+		service apache2 reload
+		
+		if [ ${ACTION} == ${MINUS} ]; then
+			echo "Usuwanie pliku ${USR}.raspberrypi3.fritz.box.conf subdomeny ${USR}.raspberrypi3.fritz.box"
+			rm -v /etc/apache2/sites-available/$USR.raspberrypi3.fritz.box.conf
+		fi
+	fi
+fi
