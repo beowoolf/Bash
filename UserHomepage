@@ -31,7 +31,7 @@ if [ -z ${USR} ]; then
 fi
 
 if [ -z ${DOM} ]; then
-	echo "User argument (-u) not set"
+	echo "Domain argument (-d) not set"
 else
 	if [ -z ${ACTION} ]; then
 		echo "Action argument (-a) should be \"+\" or \"-\" char"
