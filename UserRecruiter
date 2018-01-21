@@ -5,7 +5,7 @@ if [ "$(id -u)" != "0" ]; then
    exit 1
 fi
 
-while getopts "u:p:" option; do
+while getopts "u:p:d:" option; do
 	case $option in
 		u)
 			echo "-u $OPTARG" >&2
@@ -15,42 +15,46 @@ while getopts "u:p:" option; do
 			echo "-p $OPTARG" >&2
 			PASS=${OPTARG}
 			;;
+		d)
+			echo "-d $OPTARG" >&2
+			DOM=${OPTARG}
+			;;
 	esac
 done
 
 if [ -z ${USR} ]; then
-	echo "User argument (-u) not set"
+   echo "User argument (-u) not set" 1>&2
+   exit 1
+fi
+
+if [ -z ${PASS} ]; then
+	echo "Password argument (-p) not set"
 else
-	if [ -z ${PASS} ]; then
-		echo "Password argument (-p) not set"
+	if [ -z ${DOM} ]; then
+		echo "Domain argument (-d) not set"
 	else
-		# echo "useradd -m $USR -N -G www-data -p $(echo $PASS | openssl passwd -1 -stdin)"
-		# useradd -m $USR -N -G www-data -p $(echo $PASS | openssl passwd -1 -stdin)
-		# echo "useradd -m $USR -G www-data -p $(echo $PASS | openssl passwd -1 -stdin)"
-		# useradd -m $USR -G www-data -p $(echo $PASS | openssl passwd -1 -stdin)
 		echo "useradd -m $USR -p $(echo $PASS | openssl passwd -1 -stdin)"
 		useradd -m $USR -p $(echo $PASS | openssl passwd -1 -stdin)
 		
 		echo "adduser www-data ${USR}"
 		adduser www-data $USR
-		mkdir -v /home/$USR/Web
-		# chown -v -R $USR:www-data /home/$USR/Web
+		mkdir -v -m 2775 /home/$USR/Web
 		chown -v -R $USR:$USR /home/$USR/Web
 		
-		echo "Tworzenie pliku ${USR}.raspberrypi3.fritz.box.conf subdomeny ${USR}.raspberrypi3.fritz.box"
+		echo "Tworzenie pliku ${USR}.${HOSTNAME}.${DOM}.conf subdomeny ${USR}.${HOSTNAME}.${DOM}"
 		echo "<VirtualHost *:80>
-	ServerAdmin $USR@raspberrypi3.fritz.box
-	ServerName $USR.raspberrypi3.fritz.box
-	ServerAlias www.$USR.raspberrypi3.fritz.box
+	ServerAdmin $USR@$HOSTNAME.$DOM
+	ServerName $USR.$HOSTNAME.$DOM
+	ServerAlias www.$USR.$HOSTNAME.$DOM
 	DocumentRoot /home/$USR/Web
 	ErrorLog \${APACHE_LOG_DIR}/error.log
 	CustomLog \${APACHE_LOG_DIR}/access.log combined
-</VirtualHost>" > /etc/apache2/sites-available/$USR.raspberrypi3.fritz.box.conf
+</VirtualHost>" > /etc/apache2/sites-available/$USR.$HOSTNAME.$DOM.conf
 
-		echo "Aktywacja subdomeny ${USR}.raspberrypi3.fritz.box z pliku ${USR}.raspberrypi3.fritz.box.conf"
-		a2ensite $USR.raspberrypi3.fritz.box.conf
+		echo "Aktywacja subdomeny ${USR}.${HOSTNAME}.${DOM} z pliku ${USR}.${HOSTNAME}.${DOM}.conf"
+		a2ensite $USR.$HOSTNAME.$DOM.conf
 		
-		echo "Przeładowanie konfiguracji serwera WWW, aby aktywować subdomenę ${USR}.raspberrypi3.fritz.box z pliku ${USR}.raspberrypi3.fritz.box.conf"
+		echo "Przeładowanie konfiguracji serwera WWW, aby aktywować subdomenę ${USR}.${HOSTNAME}.${DOM} z pliku ${USR}.${HOSTNAME}.${DOM}.conf"
 		service apache2 reload
 	fi
 fi
