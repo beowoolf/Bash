@@ -5,26 +5,35 @@ if [ "$(id -u)" != "0" ]; then
    exit 1
 fi
 
-while getopts "u:" option; do
+while getopts "u:d:" option; do
 	case $option in
 		u)
 			echo "-u $OPTARG" >&2
 			USR=${OPTARG}
 			;;
+		u)
+			echo "-d $OPTARG" >&2
+			DOM=${OPTARG}
+			;;
 	esac
 done
 
 if [ -z ${USR} ]; then
-	echo "User argument (-u) not set"
+   echo "User argument (-u) not set" 1>&2
+   exit 1
+fi
+
+if [ -z ${DOM} ]; then
+	echo "Domain argument (-d) not set"
 else
-	echo "Dezaktywacja subdomeny ${USR}.raspberrypi3.fritz.box z pliku ${USR}.raspberrypi3.fritz.box.conf"
-	a2dissite $USR.raspberrypi3.fritz.box.conf
+	echo "Dezaktywacja subdomeny ${USR}.${HOSTNAME}.${DOM} z pliku ${USR}.${HOSTNAME}.${DOM}.conf"
+	a2dissite $USR.$HOSTNAME.$DOM.conf
 	
-	echo "Przeładowanie konfiguracji serwera WWW, aby dezaktywować subdomenę ${USR}.raspberrypi3.fritz.box z pliku ${USR}.raspberrypi3.fritz.box.conf"
+	echo "Przeładowanie konfiguracji serwera WWW, aby dezaktywować subdomenę ${USR}.${HOSTNAME}.${DOM} z pliku ${USR}.${HOSTNAME}.${DOM}.conf"
 	service apache2 reload
 	
-	echo "Usuwanie pliku ${USR}.raspberrypi3.fritz.box.conf subdomeny ${USR}.raspberrypi3.fritz.box"
-	rm -v /etc/apache2/sites-available/$USR.raspberrypi3.fritz.box.conf
+	echo "Usuwanie pliku ${USR}.${HOSTNAME}.${DOM}.conf subdomeny ${USR}.${HOSTNAME}.${DOM}"
+	rm -v /etc/apache2/sites-available/$USR.$HOSTNAME.$DOM.conf
 	
 	echo "deluser -remove-home ${USR}"
 	deluser -remove-home $USR
