@@ -11,7 +11,7 @@ while getopts "u:d:" option; do
 			echo "-u $OPTARG" >&2
 			USR=${OPTARG}
 			;;
-		u)
+		d)
 			echo "-d $OPTARG" >&2
 			DOM=${OPTARG}
 			;;
